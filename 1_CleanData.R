@@ -24,7 +24,7 @@ library("DescTools")
 #####################################################
 # Load questionnaire and time use datasets
 #####################################################
-setwd(".../6_GUI/GUI_ChildCohortWave2/GUI_ChildCohortWave2_Data")
+setwd("../6_GUI/GUI_ChildCohortWave2/GUI_ChildCohortWave2_Data")
 
 data_quest <- read.spss("./13 year cohort data/GUI Data_ChildCohortWave2.sav",
                     use.value.labels = FALSE,
@@ -290,7 +290,7 @@ print(paste0("In PSID there are ", table(data_merge$age)[[1]], " 8 year-olds, ",
              table(data_merge$age)[[9]], " 16 year-olds, ",
              table(data_merge$age)[[10]], " 17 year-olds."))
 
-data_merge <- datamerge %>% filter(age > 11 & age < 16)
+data_merge <- data_merge %>% filter(age > 11 & age < 16)
 print(paste0("In PSID we only select ", table(data_merge$age)[[1]], " 12 year-olds, ", 
              table(data_merge$age)[[2]], " 13 year-olds, ",
              table(data_merge$age)[[3]], " 14 year-olds, ",
@@ -795,7 +795,7 @@ gc()
 #######################################################
 # Create technology use variales
 #######################################################
-
+f
 ########################
 ### Time Use Diary #####
 ########################
