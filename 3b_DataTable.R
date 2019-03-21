@@ -254,14 +254,43 @@ for(i in 1:nrow(results_table_confirmatory)){
 
 # bootsrapped CI 
 bootstrap_sca_mcs <- read_rds("3_3_MCS_SCA_boot_nonSEM.rds")
-all_data_frames <- do.call("rbind", bootstrap_sca_mcs[1:bootstraps])
-all_data_frames$tech <- plyr::revalue(all_data_frames$tech, c("tech_weekday_c"="tech_c", "tech_weekend_c"="tech_c"))
-all_data_frames <- all_data_frames %>% filter(tech == c("sr_tech", "tech_c", "tech_1hr_wd", "tech_30m_wd"))
-effects_ci <- all_data_frames %>% group_by(tech) %>% dplyr::summarise(`effect_lower`=quantile(effect, probs=0.025),
-            `effect_higher`=quantile(effect, probs=0.975))
-rsqrd_ci <- all_data_frames %>% group_by(tech) %>% dplyr::summarise(`rsqrd_lower`=quantile(rsqrd, probs=0.025),
-            `rsqrd_higher`=quantile(rsqrd, probs=0.975))
-ci <- left_join(effects_ci, rsqrd_ci, by = c("tech"))
+
+results_frame_medians <- data.frame("sr_tech" = NA, "tech_weekday_d" = NA, "tech_weekend_d" = NA,
+                                    "tech_c" = NA,
+                                    "tech_2hr_wd" = NA, "tech_2hr_we" = NA, 
+                                    "tech_1hr_wd" = NA, "tech_1hr_we" = NA, 
+                                    "tech_30m_wd" = NA, "tech_30m_we" = NA) 
+results_frame_rsq <- data.frame("sr_tech" = NA, "tech_weekday_d" = NA, "tech_weekend_d" = NA,
+                                    "tech_c" = NA,
+                                    "tech_2hr_wd" = NA, "tech_2hr_we" = NA, 
+                                    "tech_1hr_wd" = NA, "tech_1hr_we" = NA, 
+                                    "tech_30m_wd" = NA, "tech_30m_we" = NA) 
+
+for(b in 1:(length(bootstrap_sca_mcs)-1)){
+  specific_result <- bootstrap_sca_mcs[[b]]
+  specific_result$tech <- plyr::revalue(specific_result$tech, c("tech_weekday_c"="tech_c", "tech_weekend_c"="tech_c"))
+  medians <- specific_result %>% group_by(tech) %>% dplyr::summarise(median = median(effect))
+  median_rsq <- specific_result %>% group_by(tech) %>% dplyr::summarise(median = median(rsqrd))
+  results_frame_medians <- rbind(results_frame_medians, as.numeric(t(medians)[2,]))
+  results_frame_rsq <- rbind(results_frame_rsq, as.numeric(t(median_rsq)[2,]))
+}
+
+results_frame_medians <- results_frame_medians[2:nrow(results_frame_medians),]
+results_frame_medians <- results_frame_medians %>% select("sr_tech", "tech_c", "tech_1hr_wd", "tech_30m_wd")
+results_frame_rsq <- results_frame_rsq[2:nrow(results_frame_rsq),]
+results_frame_rsq <- results_frame_rsq %>% select("sr_tech", "tech_c", "tech_1hr_wd", "tech_30m_wd")
+
+effects_ci <- results_frame_medians %>% dplyr::summarise(`effect_lower_sr`=quantile(sr_tech, probs=0.025),
+            `effect_higher_sr`=quantile(sr_tech, probs=0.975), `effect_lower_c`=quantile(tech_c, probs=0.025),
+            `effect_higher_c`=quantile(tech_c, probs=0.975), `effect_lower_1hr`=quantile(tech_1hr_wd, probs=0.025),
+            `effect_higher_1hr`=quantile(tech_1hr_wd, probs=0.975), `effect_lower_30m`=quantile(tech_30m_wd, probs=0.025),
+            `effect_higher_30m`=quantile(tech_30m_wd, probs=0.975))
+rsqrd_ci <- results_frame_rsq %>% dplyr::summarise(`rsqd_lower_sr`=quantile(sr_tech, probs=0.025),
+                                                      `rsqd_higher_sr`=quantile(sr_tech, probs=0.975), `rsqd_lower_c`=quantile(tech_c, probs=0.025),
+                                                      `rsqd_higher_c`=quantile(tech_c, probs=0.975), `rsqd_lower_1hr`=quantile(tech_1hr_wd, probs=0.025),
+                                                      `rsqd_higher_1hr`=quantile(tech_1hr_wd, probs=0.975), `rsqd_lower_30m`=quantile(tech_30m_wd, probs=0.025),
+                                                      `rsqd_higher_30m`=quantile(tech_30m_wd, probs=0.975) )
+ci <- c(effects_ci, rsqrd_ci)
 
 # Join tables
 results_table_confirmatory <- results_table_confirmatory %>% select(-c("p_gui", "p_psid"))
@@ -274,7 +303,7 @@ write.csv(results_table_confirmatory, file = "3_results_table_confirmatory_compl
 write.csv(results_table_confirmatory %>% filter(sig_measure != "share of results"), file = "3_results_table_confirmatory.csv")
 
 ##########################################################################################################
-# 6. Make Conrol Table ###################################################################################
+# 6. Make Control Table ###################################################################################
 ##########################################################################################################
 results_frame_mcs_wide_es <- results_frame_mcs %>% select(measure, tech, control, effect) %>% spread(control, effect)
 names(results_frame_mcs_wide_es) <- c("measure", "tech", "no_cont_es", "cont_es")
