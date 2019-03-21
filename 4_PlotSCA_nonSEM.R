@@ -45,15 +45,25 @@ temp_data_gui$dataset <- rep("GUI", nrow(temp_data_gui))
 temp_data_psid$dataset <- rep("PSID", nrow(temp_data_psid))
 temp_data_mcs$dataset <- rep("MCS", nrow(temp_data_mcs))
 
+temp_data_gui <- temp_data_gui[order(temp_data_gui$effect),]
+temp_data_gui$index[!is.na(temp_data_gui$effect)] <-
+  1:nrow(temp_data_gui[!is.na(temp_data_gui$effect),])
+temp_data_psid <- temp_data_psid[order(temp_data_psid$effect),]
+temp_data_psid$index[!is.na(temp_data_psid$effect)] <-
+  1:nrow(temp_data_psid[!is.na(temp_data_psid$effect),])
+temp_data_mcs <- temp_data_mcs[order(temp_data_mcs$effect),]
+temp_data_mcs$index[!is.na(temp_data_mcs$effect)] <-
+  1:nrow(temp_data_mcs[!is.na(temp_data_mcs$effect),])
+
 temp_data_total <- rbind(temp_data_gui, temp_data_psid, temp_data_mcs)
 temp_data_total$dataset <- factor(temp_data_total$dataset, levels = c("GUI", "PSID", "MCS"), ordered = TRUE)
 
 #####################################################################################
 # d) Sort by effect sizes ####
 #####################################################################################
-temp_data_total <- temp_data_total[order(temp_data_total$effect),]
-temp_data_total$index[!is.na(temp_data_total$effect)] <-
-  1:nrow(temp_data_total[!is.na(temp_data_total$effect),])
+#temp_data_total <- temp_data_total[order(temp_data_total$effect),]
+#temp_data_total$index[!is.na(temp_data_total$effect)] <-
+#  1:nrow(temp_data_total[!is.na(temp_data_total$effect),])
 temp_data_total$sig <- "0"
 temp_data_total$sig[temp_data_total$p < .05] <- "1"
 
@@ -192,6 +202,7 @@ get_scatter_frame <- function(results_frame) {
 ##########################################################################################################
 ### Make curve
 plot_total <- get_curve(temp_data_total)
+ggsave(file="4_sca_nonsem_1.pdf", plot_total, width = 12, height = 4)
 
 ### Make dataset to scatterplot
 frame_gui <- get_scatter_frame(temp_data_gui)
@@ -217,9 +228,7 @@ frame_total$vars_or <- factor(frame_total$vars_or, levels=rev(levels(frame_total
 ### Make scatterplot
 scatter_total <-
   ggplot(data = frame_total, aes(x = vars_or, y = vars_score, color = sig)) +
-  geom_point(shape = 15,
-             size = 2,
-             alpha = 0.5) +
+  geom_point(size = 1) +
   scale_color_manual(values = c("#FF0000", "#000000")) +
   scale_y_continuous(breaks = c(10,20,30,40,50,60)) +
   coord_flip() +
@@ -231,7 +240,7 @@ scatter_total <-
     strip.text.y = element_blank(),
     strip.background = element_rect(colour="white", fill="white")
   )
-
+ggsave(file="4_sca_nonsem_2.pdf", scatter_total, width = 12, height = 4)
 
 ### Put curve and scatterplot together
 plots <- list(plot_total, scatter_total)
@@ -250,7 +259,7 @@ for (i in 1:length(grobs)){
 g <- do.call("grid.arrange", c(grobs, ncol = 1))
 
 ### Save
-ggsave(file="4_sca_nonsem.jpg", g, width = 12, height = 8)
+ggsave(file="4_sca_nonsem.pdf", g, width = 12, height = 8)
 
 ##########################################################################################################
 # 4. Run control curves ##################################################################################
@@ -327,6 +336,6 @@ figure_2 <- ggplot() +
   scale_color_identity()
 
 ggsave(
-  filename = "4_sca_controls_nonsem.jpg",
+  filename = "4_sca_controls_nonsem.pdf",
   width = 5,
   height = 5)
