@@ -17,16 +17,40 @@ library("gridExtra")
 library("viridis")
 library("ggalt")
 
+bootstraps <- 500
+
 #####################################################################################
 # b) Load data ####
 #####################################################################################
-sca_gui_boot <- read.csv(file="3_1_GUI_SCA_bootstrapped.csv")
-sca_psid_boot <- read.csv(file="3_2_PSID_SCA_bootstrapped.csv")
-sca_mcs_boot <- read.csv(file="3_3_MCS_SCA_bootstrapped.csv")
+results_frame_gui <- read.csv(file="../data/objects/3_1_GUI_SCA.csv")
+results_frame_psid <- read.csv(file="../data/objects/3_2_PSID_SCA.csv")
+results_frame_mcs <- read.csv(file="../data/objects/3_3_MCS_SCA.csv")
 
-results_frame_gui <- read.csv(file="3_1_GUI_SCA_nonSEM.csv")
-results_frame_psid <- read.csv(file="3_2_PSID_SCA_nonSEM.csv")
-results_frame_mcs <- read.csv(file="3_3_MCS_SCA_nonSEM.csv")
+results_frame_gui <- results_frame_gui[,2:ncol(results_frame_gui)]
+results_frame_psid <- results_frame_psid[,2:ncol(results_frame_psid)]
+results_frame_mcs <- results_frame_mcs[,2:ncol(results_frame_mcs)]
+
+boot_sca_gui <- read_rds("../data/objects/3_1_GUI_SCAboot.rds")
+boot_sca_psid <- read_rds("../data/objects/3_2_PSID_SCAboot.rds")
+boot_sca_mcs <- read_rds("../data/objects/3_3_MCS_SCAboot.rds")
+
+### make bootstrapped for each specification
+get_boot_results <- function(boot_sca){
+  all_data_frames <- do.call("rbind", boot_sca[1:bootstraps])
+  results_frame <- all_data_frames %>% group_by(measure, tech, control) %>% dplyr::summarise_all(funs(mean))
+  
+  results_frame[, c("effect_lower", "effect_upper")] <- all_data_frames %>% dplyr::group_by(measure, tech, control) %>%
+    dplyr::summarise(`effect_lower`=quantile(effect, probs=0.025),
+              `effect_higher`=quantile(effect, probs=0.975)) %>% ungroup() %>% select(effect_lower, effect_higher)
+  results_frame[, c("rsqrd_lower", "rsqrd_upper")] <- all_data_frames %>% dplyr::group_by(measure, tech, control) %>%
+    dplyr::summarise(`rsqrd_lower`=quantile(rsqrd, probs=0.025),
+              `rsqrd_higher`=quantile(rsqrd, probs=0.975)) %>% ungroup() %>% select(rsqrd_lower, rsqrd_higher)
+  return(results_frame)
+}
+
+sca_gui_boot <- get_boot_results(boot_sca_gui)
+sca_psid_boot <- get_boot_results(boot_sca_psid)
+sca_mcs_boot <- get_boot_results(boot_sca_mcs)
 
 sca_gui <- left_join(results_frame_gui, sca_gui_boot[, c("measure", "tech", "control","effect_lower", "effect_upper", "rsqrd_lower", "rsqrd_upper")], by = c("measure", "tech", "control"))
 sca_psid <- left_join(results_frame_psid, sca_psid_boot[, c("measure", "tech", "control","effect_lower", "effect_upper", "rsqrd_lower", "rsqrd_upper")], by = c("measure", "tech", "control"))
@@ -45,6 +69,7 @@ temp_data_gui$dataset <- rep("GUI", nrow(temp_data_gui))
 temp_data_psid$dataset <- rep("PSID", nrow(temp_data_psid))
 temp_data_mcs$dataset <- rep("MCS", nrow(temp_data_mcs))
 
+### add index which shows the order of the specifications
 temp_data_gui <- temp_data_gui[order(temp_data_gui$effect),]
 temp_data_gui$index[!is.na(temp_data_gui$effect)] <-
   1:nrow(temp_data_gui[!is.na(temp_data_gui$effect),])
@@ -55,8 +80,13 @@ temp_data_mcs <- temp_data_mcs[order(temp_data_mcs$effect),]
 temp_data_mcs$index[!is.na(temp_data_mcs$effect)] <-
   1:nrow(temp_data_mcs[!is.na(temp_data_mcs$effect),])
 
+### bind together again
 temp_data_total <- rbind(temp_data_gui, temp_data_psid, temp_data_mcs)
 temp_data_total$dataset <- factor(temp_data_total$dataset, levels = c("GUI", "PSID", "MCS"), ordered = TRUE)
+
+## add significance 
+temp_data_total$sig <- "0"
+temp_data_total$sig[temp_data_total$p < .05] <- "1"
 
 #####################################################################################
 # d) Sort by effect sizes ####
@@ -64,8 +94,6 @@ temp_data_total$dataset <- factor(temp_data_total$dataset, levels = c("GUI", "PS
 #temp_data_total <- temp_data_total[order(temp_data_total$effect),]
 #temp_data_total$index[!is.na(temp_data_total$effect)] <-
 #  1:nrow(temp_data_total[!is.na(temp_data_total$effect),])
-temp_data_total$sig <- "0"
-temp_data_total$sig[temp_data_total$p < .05] <- "1"
 
 ##########################################################################################################
 # 2. Setup Functions #####################################################################################
@@ -79,7 +107,6 @@ get_curve <- function(data) {
   plot <- ggplot(data, aes(x = 1:nrow(data))) +
     geom_ribbon(aes(ymin = effect_lower, ymax = effect_upper), fill = "grey90") +
     geom_point(aes(y = effect, color = sig), size = 1) +
-    #geom_hline(yintercept = 0) +
     scale_color_manual(values = c("#FF0000", "#000000")) +
     scale_y_continuous(name = "Standardized Regression Coefficient") +
     facet_grid(. ~ dataset, scales = "free", space = "free") +
@@ -202,7 +229,6 @@ get_scatter_frame <- function(results_frame) {
 ##########################################################################################################
 ### Make curve
 plot_total <- get_curve(temp_data_total)
-ggsave(file="4_sca_nonsem_1.pdf", plot_total, width = 12, height = 4)
 
 ### Make dataset to scatterplot
 frame_gui <- get_scatter_frame(temp_data_gui)
@@ -240,7 +266,6 @@ scatter_total <-
     strip.text.y = element_blank(),
     strip.background = element_rect(colour="white", fill="white")
   )
-ggsave(file="4_sca_nonsem_2.pdf", scatter_total, width = 12, height = 4)
 
 ### Put curve and scatterplot together
 plots <- list(plot_total, scatter_total)
@@ -259,7 +284,8 @@ for (i in 1:length(grobs)){
 g <- do.call("grid.arrange", c(grobs, ncol = 1))
 
 ### Save
-ggsave(file="4_sca_nonsem.pdf", g, width = 12, height = 8)
+ggsave(file="../figures/figure1.pdf", g, width = 12, height = 8)
+ggsave(file="../figures/figure1.jpeg", g, width = 12, height = 8)
 
 ##########################################################################################################
 # 4. Run control curves ##################################################################################
@@ -268,14 +294,7 @@ ggsave(file="4_sca_nonsem.pdf", g, width = 12, height = 8)
 #####################################################################################
 # a) Sort and subset data
 #####################################################################################
-temp_data_mcs <- temp_data_mcs[order(temp_data_mcs$effect),]
-temp_data_mcs$index[!is.na(temp_data_mcs$effect)] <-
-  1:nrow(temp_data_mcs[!is.na(temp_data_mcs$effect),])
-temp_data_mcs$sig <- "0"
-temp_data_mcs$sig[temp_data_mcs$p < .05] <- "1"
-
-median_effect_all <- median(temp_data_mcs$effect, na.rm = TRUE)
-median_p_all <- median(temp_data_mcs$p_value, na.rm = TRUE)
+#make colours
 colours <-
   viridis(
     7,
@@ -284,31 +303,17 @@ colours <-
     end = 0.9,
     direction = -1
   )
-colours_lite <-
-  viridis(
-    7,
-    alpha = 0.008,
-    begin = 0,
-    end = 0.9,
-    direction = -1
-  )
 
-temp_data_mcs$lb <- temp_data_mcs$effect - temp_data_mcs$standard_error
-temp_data_mcs$ub <- temp_data_mcs$effect + temp_data_mcs$standard_error
-
+# make medians 
 temp_data_c <- temp_data_mcs %>% filter(control == 0)
 temp_data_c$index2[!is.na(temp_data_c$effect)] <-
   1:nrow(temp_data_c[!is.na(temp_data_c$effect), ])
-temp_data_c$col <-
-  ifelse(temp_data_c$sig == 0, colours[4], colours_lite[4])
 median_effect_c <- median(temp_data_c$effect, na.rm = TRUE)
 median_p_c <- median(temp_data_c$p_value, na.rm = TRUE)
 
 temp_data_nc <- temp_data_mcs %>% filter(control == 1)
 temp_data_nc$index2[!is.na(temp_data_nc$effect)] <-
   1:nrow(temp_data_nc[!is.na(temp_data_nc$effect), ])
-temp_data_nc$col <-
-  ifelse(temp_data_nc$sig == 0, colours[4], colours_lite[4])
 median_effect_nc <- median(temp_data_nc$effect, na.rm = TRUE)
 median_p_nc <- median(temp_data_nc$p_value, na.rm = TRUE)
 
@@ -322,10 +327,10 @@ mean_effect_c <- mean(temp_data_c$effect, na.rm = TRUE)
 # b) Plot data ####
 #####################################################################################
 figure_2 <- ggplot() +
-  geom_ribbon(data = temp_data_c, aes(ymin = lb, ymax = ub, x = index2),
+  geom_ribbon(data = temp_data_c, aes(ymin = effect_lower, ymax = effect_upper, x = index2),
               colour = NA, fill = colours[7],alpha = 0.3) +
   geom_point(data = temp_data_c, aes(y = effect, x = index2, colour = colours[7])) +
-  geom_ribbon(data = temp_data_nc, aes(ymin = lb, ymax = ub, x = index2),
+  geom_ribbon(data = temp_data_nc, aes(ymin = effect_lower, ymax = effect_upper, x = index2),
               colour = NA, fill = colours[4], alpha = 0.3) +
   geom_point(data = temp_data_nc, aes(y = effect, x = index2, colour = colours[4])) +
   ggtitle("MCS Specification Curve Analysis") +
@@ -335,7 +340,5 @@ figure_2 <- ggplot() +
     size = 3.5, colour = c(colours[4], colours[7]), hjust = 0) +
   scale_color_identity()
 
-ggsave(
-  filename = "4_sca_controls_nonsem.pdf",
-  width = 5,
-  height = 5)
+ggsave(filename = "../figures/figure2.pdf", width = 5, height = 5)
+ggsave(filename = "../figures/figure2.jpeg", width = 5, height = 5)
