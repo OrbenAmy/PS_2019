@@ -15,10 +15,11 @@ library("lavaan")
 library("heplots")
 
 options(scipen=999)
+
 #####################################################################################
 # b) Load data ####
 #####################################################################################
-data_mcs <- read.csv(file="1_3_MCS_dataset.csv")
+data_mcs <- read.csv(file="../data/cleaned/1_3_MCS_dataset.csv")
 
 ##########################################################################################################
 # 2. Running SCAs via three main functions, get_data, get_model and get_coef##############################
@@ -101,9 +102,9 @@ get_data <- function(results_frame, dataset, data) {
 
 
 #####################################################################################
-#### Function: get_model (2 versions)
-#### There are two versions: this is a varient of get_model_scale
-#### where we do not scale the IV (technology use measure)
+#### Function: get_model 
+#### This version is slightly different because it uses an unstandardised iv
+#### 
 ####
 #### Input: A list from the previous function containing:
 #### results_frame = a data frame showing specifications on each line
