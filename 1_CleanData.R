@@ -24,15 +24,14 @@ library("DescTools")
 #####################################################
 # Load questionnaire and time use datasets
 #####################################################
-setwd("../6_GUI/GUI_ChildCohortWave2/GUI_ChildCohortWave2_Data")
 
-data_quest <- read.spss("./13 year cohort data/GUI Data_ChildCohortWave2.sav",
+data_quest <- read.spss("../data/raw/gui/GUI_ChildCohortWave2/GUI_ChildCohortWave2_Data/13 year cohort data/GUI Data_ChildCohortWave2.sav",
                     use.value.labels = FALSE,
                     to.data.frame = TRUE,
                     use.missings = TRUE)
 names(data_quest) <- tolower(names(data_quest))
 
-data_time <- read.spss("./Time Use Data/GUI Data_ChildCohortWave2_TimeUse.sav",
+data_time <- read.spss("../data/raw/gui/GUI_ChildCohortWave2/GUI_ChildCohortWave2_Data/Time Use Data/GUI Data_ChildCohortWave2_TimeUse.sav",
                        use.value.labels = FALSE,
                        to.data.frame = TRUE,
                        use.missings = TRUE)
@@ -64,11 +63,10 @@ print(paste0("In GUI there are ", table(data_merge$age)[[1]], " 12 year-olds and
 #recode weekday variable to weekday (1) if it is a weekday (bweekend = 1), term time (btwerm = 1) and a school day (bt2_1 = 1)
 #recode weekday variable to weekend (0) if it is a weekend (bweekend = 2)
 #recode weekday variable to NA (NA) if there is an NA variable or it is a non-term-time or non-school-day weekday
-data_merge <- data_merge %>% mutate(wd = ifelse(bweekend == 1 & bterm == 1 & bt2_1 == 1, 1, ifelse(bweekend == 2, 0, NA))) 
 print(paste0("Before removing those adolescents who filled out a time diary during the week but not during term/school time we had ", nrow(data_merge)[], " participants."))
 
 #remove those that score NA on weekday/weekend
-data_merge <- data_merge %>% filter(is.na(wd) == FALSE)
+data_merge <- data_merge %>% mutate(wd = ifelse(bweekend == 1 & bterm == 1 & bt2_1 == 1, 1, ifelse(bweekend == 2, 0, NA))) %>% filter(is.na(wd) == FALSE)
 print(paste0("After removing those adolescents who filled out a time diary during the week but not during term/school time we have ", nrow(data_merge)[], " participants."))
 
 
@@ -88,7 +86,7 @@ tech_values <- c(11, #internet and emailing
                  13, #talking on phone and texting
                  15) #watching TV/Video/DVDs
 
-# create time variables 
+# create time variables: these creates the variables included in thies study automatically (as there are many!)
 # there are 288 time variables as there are 24 hours in the day * 4 15-minute time slots * 3 activities per time slot
 time_vars_1 <- sort(as.vector(outer(paste0("bt", sprintf("%02d", 0:11), "_"), paste0(1:4, "_a"), paste, sep="")))
 time_vars_a <- sort(as.vector(outer(time_vars_1, c("1", "2", "3"), paste, sep = "")))
@@ -99,12 +97,13 @@ time_vars_b <- sort(as.vector(outer(time_vars_1, c("1", "2", "3"), paste, sep = 
 # put the 12 variable in the middle as it signifies midday, not midnight  
 time_vars_c <- time_vars_b[133:144]
 time_vars_d <- time_vars_b[-c(133:144)]
-time_vars <- c(time_vars_a, time_vars_c, time_vars_d)
+time_vars <- c(time_vars_a, time_vars_c, time_vars_d) #this is the order of variables present in the time use dataset 
 
 #remove unnecessary variables
 rm(time_vars_1, time_vars_a, time_vars_b, time_vars_c, time_vars_d)
 
-# add up technology use over the day
+# add up technology use over the day. As there are three time slots for each activity this could be over 24 hours a day. 
+# this needs to be taken into account when examining the results of this study.
 tech_times <- data_merge %>% select(time_vars)
 data_merge$tech <- apply(tech_times, MARGIN = 1, function(x) sum(x %in% tech_values))*0.25 
 
@@ -112,6 +111,7 @@ data_merge$tech <- apply(tech_times, MARGIN = 1, function(x) sum(x %in% tech_val
 ### Time Use Diary: BedTime #####
 #######################################
 # tally tech use before bedtime
+# to do this we first make empty colums to add numbers to later
 data_merge$bedtime <- rep(NA, nrow(data_merge))
 data_merge$tech_30m <- rep(NA, nrow(data_merge))
 data_merge$tech_1hr <- rep(NA, nrow(data_merge))
@@ -123,7 +123,7 @@ for (i in 1:nrow(data_merge)){
   sleep_time <- which(tech_times[i,] == 1)
   
   for (n in 2:(length(sleep_time)-1)) {
-    if (sleep_time[n+1] - sleep_time[n] > 4){ # look at the last point in day where sleep is interrupted by another activity 
+    if (sleep_time[n+1] - sleep_time[n] > 4){ # look at the last point in day where sleep is interrupted by another activity
       sleep_onset <- sleep_time[n+1] # print the column when they go to bed (start sleeping), you can get the time by plugging number into names(tech_times)[n]
       sleep_onset <- RoundTo(sleep_onset, multiple = 3, floor) + 1 #round as we always want sleeping as the first activity
       } 
@@ -134,7 +134,7 @@ for (i in 1:nrow(data_merge)){
   } else {}
   
   #make variables
-  data_merge[i, "bedtime"] <- sleep_onset
+  data_merge[i, "bedtime"] <- sleep_onset #the sleep onset is therefore the point in the diary where sleep appears (the distance is three between each bedtime)
   data_merge[i, "tech_30m"] <- ifelse(any(tech_times[i, (sleep_onset-6):(sleep_onset-1)] %in% tech_values), 1, 0)
   data_merge[i, "tech_1hr"] <- ifelse(any(tech_times[i, (sleep_onset-12):(sleep_onset-1)] %in% tech_values), 1, 0)
   data_merge[i, "tech_2hr"] <- ifelse(any(tech_times[i, (sleep_onset-24):(sleep_onset-1)] %in% tech_values), 1, 0)
@@ -143,7 +143,9 @@ for (i in 1:nrow(data_merge)){
 #######################################
 ### Time Use Diary: Recoding Variables #####
 #######################################
-hist(data_merge$tech, main = "Histogram of time-diary tech use", xlab = "hours")
+
+#we can first look at a histogram of the technology use
+#hist(data_merge$tech, main = "Histogram of time-diary tech use", xlab = "hours")
 
 # recode into dichotomous (techdi = 0, no tech use, tech_di = 1, some tech use)
 data_merge$tech_di <- ifelse(data_merge$tech == 0, 0, ifelse(is.na(data_merge$tech) == TRUE, NA, 1))
@@ -176,14 +178,16 @@ vars_tech <- c("cq2q13", #Watch television, videos or DVDs (minutes)
                "cq2q15", #Using the computer (minutes)
                "cq2q16") #Playing video games such as Playstation, X-box, Nintendo, etc.? (minutes)
 data_merge$sr_tech <- rowMeans(subset(data_merge, select = vars_tech), na.rm = TRUE)
-hist(data_merge$sr_tech, main = "Histogram of Self-reported technology use", xlab = "self-report tech use")
+
+#we can make a histogram of this
+#hist(data_merge$sr_tech, main = "Histogram of Self-reported technology use", xlab = "self-report tech use")
 
 ########################
 ### Correlate ######
 ########################
 cor.test(data_merge$sr_tech, data_merge$tech)
 print(paste0("The correlation between general technology use (time use diaries) and self-reported technology use is ", 
-             cor.test(data_merge$sr_tech, data_merge$tech)$estimate))
+             round(cor.test(data_merge$sr_tech, data_merge$tech)$estimate, digits = 3)))
 
 #######################################################
 # Create well-being variables
@@ -199,7 +203,7 @@ data_merge$sdqemot <- 10 - data_merge$w2pcd2_sdqemot
 data_merge$sdqcond <- 10 - data_merge$w2pcd2_sdqcond
 data_merge$sdqhyper <- 10 - data_merge$w2pcd2_sdqhyper
 data_merge$sdqpeer <- 10 - data_merge$w2pcd2_sdqpeer
-hist(data_merge$sdqtot, main = "Histogram of SDQ total", xlab = "SDQ total")
+#hist(data_merge$sdqtot, main = "Histogram of SDQ total", xlab = "SDQ total")
 
 ########################
 ### Wellbeing    ######
@@ -207,12 +211,12 @@ hist(data_merge$sdqtot, main = "Histogram of SDQ total", xlab = "SDQ total")
 # Short Mood and Feelings Questionnaire (13 items, 0-2)
 # reverse depression measures so that higher means more wellbeing
 data_merge$wellbeing_measure <- 26 - data_merge$w2depression_c
-hist(data_merge$wellbeing_measure, main = "Histogram of Wellbeing", xlab = "Wellbeing")
+#hist(data_merge$wellbeing_measure, main = "Histogram of Wellbeing", xlab = "Wellbeing")
 
 #######################################################
 # Save dataset
 #######################################################
-write.csv(data_merge,file="1_1_GUI_dataset.csv")
+write.csv(data_merge,file="../data/cleaned/1_1_GUI_dataset.csv")
 
 rm(data_merge)
 rm(tech_times)
@@ -231,14 +235,12 @@ rm(n)
 #####################################################
 # Load questionnaire and time use datasets
 #####################################################
-setwd(".../5_PSID/Child Development Supplement/2014/Data")
-
 datasets <- c("ASSESS", "CHILD", "DEMOG", "HHROSTER", "IDMAP", "PCGCHILD", "PCGHH", "TD_ACT", "TD_ACTAGG", "TD_FOLLOW", "SEX")
 year <- "14"
 
 for (i in 1:length(datasets)){
   assign(paste("data", datasets[i], year, sep = "_"), 
-         read.spss(paste0(datasets[i], year, ".sav"),
+         read.spss(paste0("../data/raw/psid/Child Development Supplement/2014/Data/", datasets[i], year, ".sav"),
                    use.value.labels = FALSE,
                    to.data.frame = TRUE,
                    use.missings = TRUE))
@@ -295,6 +297,7 @@ print(paste0("In PSID we only select ", table(data_merge$age)[[1]], " 12 year-ol
              table(data_merge$age)[[2]], " 13 year-olds, ",
              table(data_merge$age)[[3]], " 14 year-olds, ",
              table(data_merge$age)[[4]], " 15 year-olds, "))
+print(paste0("In total PSID has ", nrow(data_merge), " participants."))
 
 #######################################################
 # Create technology use variales
@@ -310,15 +313,13 @@ time_data <- data_TD_ACT_14 %>%
   mutate(id = paste(family_id, ind_id, sep = "_")) 
 
 # Delete participant who did not fill out properly, they only add three or less activities
-print(paste0("Before removing those adolescents who filled out a time diary during the week but not during term/school time we had ", length(unique(time_data$id))[], " participants."))
+print(paste0("Before removing those adolescents who included less than 3 activities in their time use diaries we had ", length(unique(time_data$id))[], " participants."))
 time_data <- time_data %>% group_by(id,dow) %>% filter(n() > 2)
-print(paste0("After removing those adolescents who filled out a time diary during the week but not during term/school time we had ", length(unique(time_data$id))[], " participants."))
+print(paste0("After removing those adolescents who included less than 3 activities in their time use diaries we had ", length(unique(time_data$id))[], " participants."))
 
 # Make a data frame
-participants <- as.numeric(length(unique(time_data$id)))
-
 time_frame <-
-  data.frame(matrix(NA, nrow = participants, ncol = 9))
+  data.frame(matrix(NA, nrow = as.numeric(length(unique(time_data$id))), ncol = 9))
 names(time_frame) <-
   c(
     "id",
@@ -479,10 +480,11 @@ if (analysis == 1) {
       time_frame[i,"tech_2hr_wd"] <- 0
     }
     }}
-  write.csv(time_frame, "1_2_PSID_bedtime_data.csv")
+  write.csv(time_frame, "../data/cleaned/1_2_PSID_bedtime_data.csv")
 } else {}
 
-time_frame <- read.csv("1_2_PSID_bedtime_data.csv")
+#it is important to note that participants can aways note down two activities, so total tech time can be above 24 hours. 
+time_frame <- read.csv("../data/cleaned/1_2_PSID_bedtime_data.csv")
 data_merge <- left_join(data_merge, time_frame, by = "id") # merge datasets
 
 # recode tech total into dichotomous tech use variable
@@ -499,8 +501,8 @@ data_merge$tech_cont_we <- data_merge$tech_total_we
 is.na(data_merge[, c("tech_cont_wd", "tech_cont_we")]) <- 
   data_merge[, c("tech_total_wd", "tech_total_we")] == 0
 
-hist(data_merge$tech_total_wd, main = "Histogram of time-diary tech use on weekday", xlab = "hours")
-hist(data_merge$tech_total_we, main = "Histogram of time-diary tech use on weekend", xlab = "hours")
+#hist(data_merge$tech_total_wd, main = "Histogram of time-diary tech use on weekday", xlab = "hours")
+#hist(data_merge$tech_total_we, main = "Histogram of time-diary tech use on weekend", xlab = "hours")
 
 ########################
 ### Retrospective ######
@@ -515,15 +517,15 @@ is.na(data_merge[, vars_tech]) <- data_merge[, vars_tech] == 8
 is.na(data_merge[, vars_tech]) <- data_merge[, vars_tech] == 9
 
 data_merge$sr_tech <- 6- rowMeans(subset(data_merge, select = vars_tech), na.rm = TRUE)
-hist(data_merge$sr_tech, main = "Histogram of self-reported technology use", xlab = "self-reported tech use")
+#hist(data_merge$sr_tech, main = "Histogram of self-reported technology use", xlab = "self-reported tech use")
 
 ########################
 ### Correlation ######
 ########################
 print(paste0("The correlation between general weekday technology use (time use diaries) and self-reported technology use is ", 
-             cor.test(data_merge$sr_tech, data_merge$tech_total_wd)$estimate))
+             round(cor.test(data_merge$sr_tech, data_merge$tech_total_wd)$estimate, 3)))
 print(paste0("The correlation between general weekend technology use (time use diaries) and self-reported technology use is ", 
-             cor.test(data_merge$sr_tech, data_merge$tech_total_we)$estimate))
+             round(cor.test(data_merge$sr_tech, data_merge$tech_total_we)$estimate, 3)))
 
 #######################################################
 # Create well-being variables
@@ -543,7 +545,7 @@ is.na(data_merge[, vars_dep]) <- data_merge[, vars_dep] == 9
 data_merge <- data_merge %>% mutate_at(vars(paste0("C14C", c("8","10", "14", "15", "16"))), funs(r = recode(.,`1` = 3, `2` = 2, `3` = 1))) #recode
 
 data_merge$wellbeing <- rowMeans(subset(data_merge, select = vars_dep_r), na.rm = TRUE)
-hist(data_merge$wellbeing, main = "Histogram of wellbeing", xlab = "Wellbeing Scores")
+#hist(data_merge$wellbeing, main = "Histogram of wellbeing", xlab = "Wellbeing Scores")
 
 ########################
 ### Self Esteem   ######
@@ -557,12 +559,12 @@ is.na(data_merge[, vars_se]) <- data_merge[, vars_se] == 9
 data_merge <- data_merge %>% mutate_at(vars(paste0("C14E", 1:5)), funs(recode(.,`1` = 4, `2` = 3, `3` = 2, `4` = 1))) #recode
 
 data_merge$selfesteem <- rowMeans(subset(data_merge, select = vars_se), na.rm = TRUE)
-hist(data_merge$selfesteem, main = "Histogram of Selfesteem", xlab = "Selfesteem Scores")
+#hist(data_merge$selfesteem, main = "Histogram of Selfesteem", xlab = "Selfesteem Scores")
 
 #######################################################
 # Save dataset
 #######################################################
-write.csv(data_merge, file="1_2_PSID_dataset.csv")
+write.csv(data_merge, file="../data/cleaned/1_2_PSID_dataset.csv")
 rm(list = (paste("data", datasets, year, sep = "_")))
 
 #####################################################################################
@@ -572,76 +574,75 @@ rm(list = (paste("data", datasets, year, sep = "_")))
 #####################################################
 # Load questionnaire and time use datasets
 #####################################################
-setwd(".../3_MCS/Spring 2018 release/spss/spss19")
 
 # load data which is in separate data files
-data1 <- read.spss("mcs6_cm_assessment.sav",
+data1 <- read.spss("../data/raw/mcs/Spring 2018 release/spss/spss19/mcs6_cm_assessment.sav",
                    use.value.labels = FALSE,
                    to.data.frame = TRUE,
                    use.missings = TRUE)
 names(data1) <- tolower(names(data1))
 
-data2 <- read.spss("mcs6_cm_derived.sav",
+data2 <- read.spss("../data/raw/mcs/Spring 2018 release/spss/spss19/mcs6_cm_derived.sav",
                    use.value.labels = FALSE,
                    to.data.frame = TRUE,
                    use.missings = TRUE)
 names(data2) <- tolower(names(data2))
 
-data3 <- read.spss("mcs6_cm_interview.sav",
+data3 <- read.spss("../data/raw/mcs/Spring 2018 release/spss/spss19/mcs6_cm_interview.sav",
                    use.value.labels = FALSE,
                    to.data.frame = TRUE,
                    use.missings = TRUE)
 names(data3) <- tolower(names(data3))
 
-data4 <- read.spss("mcs6_cm_measurement.sav",
+data4 <- read.spss("../data/raw/mcs/Spring 2018 release/spss/spss19/mcs6_cm_measurement.sav",
                    use.value.labels = FALSE,
                    to.data.frame = TRUE,
                    use.missings = TRUE)
 names(data4) <- tolower(names(data4))
 
-data5 <- read.spss("mcs6_family_derived.sav",
+data5 <- read.spss("../data/raw/mcs/Spring 2018 release/spss/spss19/mcs6_family_derived.sav",
                    use.value.labels = FALSE,
                    to.data.frame = TRUE,
                    use.missings = TRUE)
 names(data5) <- tolower(names(data5))
 
-data6 <- read.spss("mcs6_parent_cm_interview.sav",
+data6 <- read.spss("../data/raw/mcs/Spring 2018 release/spss/spss19/mcs6_parent_cm_interview.sav",
                    use.value.labels = FALSE,
                    to.data.frame = TRUE,
                    use.missings = TRUE)
 names(data6) <- tolower(names(data6))
 
-data7 <- read.spss("mcs6_parent_assessment.sav",
+data7 <- read.spss("../data/raw/mcs/Spring 2018 release/spss/spss19/mcs6_parent_assessment.sav",
                    use.value.labels = FALSE,
                    to.data.frame = TRUE,
                    use.missings = TRUE)
 names(data7) <- tolower(names(data7))
 
-data8 <- read.spss("mcs6_parent_derived.sav",
+data8 <- read.spss("../data/raw/mcs/Spring 2018 release/spss/spss19/mcs6_parent_derived.sav",
                    use.value.labels = FALSE,
                    to.data.frame = TRUE,
                    use.missings = TRUE)
 names(data8) <- tolower(names(data8))
 
-data9 <- read.spss("mcs6_parent_interview.sav",
+data9 <- read.spss("../data/raw/mcs/Spring 2018 release/spss/spss19/mcs6_parent_interview.sav",
                    use.value.labels = FALSE,
                    to.data.frame = TRUE,
                    use.missings = TRUE)
 names(data9) <- tolower(names(data9))
 
-data10 <- read.spss("mcs6_proxy_partner_interview.sav",
+data10 <- read.spss("../data/raw/mcs/Spring 2018 release/spss/spss19/mcs6_proxy_partner_interview.sav",
                     use.value.labels = FALSE,
                     to.data.frame = TRUE,
                     use.missings = TRUE)
 names(data10) <- tolower(names(data10))
 
-data11 <- read.spss("mcs6_hhgrid.sav",
+data11 <- read.spss("../data/raw/mcs/Spring 2018 release/spss/spss19/mcs6_hhgrid.sav",
                     use.value.labels = FALSE,
                     to.data.frame = TRUE,
                     use.missings = TRUE)
 names(data11) <- tolower(names(data11))
 
-data12 <- read.spss("mcs6_cm_tud_harmonised.sav",
+data12 <- read.spss("../data/raw/mcs/Spring 2018 release/spss/spss19/mcs6_cm_tud_harmonised.sav",
                     use.value.labels = FALSE,
                     to.data.frame = TRUE,
                     use.missings = TRUE)
@@ -795,7 +796,7 @@ gc()
 #######################################################
 # Create technology use variales
 #######################################################
-f
+
 ########################
 ### Time Use Diary #####
 ########################
@@ -1147,7 +1148,7 @@ print(paste0("In MCS there are ", table(data$sex)[[1]], " girls and ", table(dat
 
 # Age
 data$age <- data$fccage00
-print(paste0("In PSID there are ", table(data$age)[[1]], " 13 year-olds and ", 
+print(paste0("In MCS there are ", table(data$age)[[1]], " 13 year-olds and ", 
              table(data$age)[[2]], " 14 year-olds and ",
              table(data$age)[[3]], " 15 year-olds"))
 
