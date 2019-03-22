@@ -1,0 +1,9 @@
+"","tech_measure","sig_measure","observed_mcs","p_mcs","rsqrd","observed_mcs_lower","observed_mcs_higher","rsqrd_lower","rsqrd_higher"
+"1","sr_tech","median ES",-0.08,0,0.008,-0.1,-0.07,0.006,0.011
+"2","sr_tech","share of sig results",4,0,NA,NA,NA,NA,NA
+"3","tech_c","median ES",-0.02,0,0.001,-0.04,-0.01,0,0.002
+"4","tech_c","share of sig results",5,0,NA,NA,NA,NA,NA
+"5","tech_30m_wd","median ES",0.03,0,0.001,0.01,0.05,0,0.003
+"6","tech_30m_wd","share of sig results",3,0,NA,NA,NA,NA,NA
+"7","tech_1hr_wd","median ES",0.02,0.02,0.001,0.01,0.04,0,0.003
+"8","tech_1hr_wd","share of sig results",1,0.27,NA,NA,NA,NA,NA
