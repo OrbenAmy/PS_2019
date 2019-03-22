@@ -813,13 +813,10 @@ data12$mcsid12 <-
   )
 
 names(data12) <- c("mcsid", "fcnum00", "order", "time", "datacollection", "month", "year", "dow", "activity", "mcsid12")
-
 data12$change <-  c(NA,data12[2:nrow(data12), "activity"] - data12[1:(nrow(data12)-1), "activity"])
 
-participants <- length(unique(data12$mcsid12))
-
 time_frame <-
-  data.frame(matrix(NA, nrow = participants, ncol = 9))
+  data.frame(matrix(NA, nrow = length(unique(data12$mcsid12)), ncol = 9))
 names(time_frame) <-
   c(
     "id",
@@ -835,8 +832,6 @@ names(time_frame) <-
 time_frame$id <- unique(data12$mcsid12)
 
 # Examine how many participants go to sleep after midnight (end of time use diary)
-print(paste0("Before removing those adolescents who filled out a time diary during the week but not during term/school time we had ", participants, " participants."))
-
 sleep_midnight <- data12 %>% filter(time == 144) %>% count(sleep = (activity == 1))
 print(paste0(sleep_midnight[1,2], " time use diaries did not go to sleep before midnight, ", sleep_midnight[2,2], " did."))
 
@@ -974,12 +969,12 @@ if (analysis == 1){
     }} 
   }
   
-  write.csv(time_frame, "1_3_MCS_bedtime_data.csv")
+  write.csv(time_frame, "../data/cleaned/1_3_MCS_bedtime_data.csv")
   
 } else {}
 
 # merge datasets with previous datasets
-time_frame <- read.csv("1_3_MCS_bedtime_data.csv")
+time_frame <- read.csv("../data/cleaned/1_3_MCS_bedtime_data.csv")
 data <-
   dplyr::left_join(data, time_frame, by = c("mcsid6" = "id"))
 
@@ -987,8 +982,8 @@ data <-
 data$tech_total_wd <- data$tech_total_wd*10/60
 data$tech_total_we <- data$tech_total_we*10/60
 
-hist(data$tech_total_wd, main = "Histogram of weekday time-diary tech use", xlab = "hours")
-hist(data$tech_total_we, main = "Histogram of weekend time-diary tech use", xlab = "hours")
+#hist(data$tech_total_wd, main = "Histogram of weekday time-diary tech use", xlab = "hours")
+#hist(data$tech_total_we, main = "Histogram of weekend time-diary tech use", xlab = "hours")
 
 # recode into dichotomous
 data$tech_di_wd <- ifelse(data$tech_total_wd == 0, 0, ifelse(is.na(data$tech_total_wd) == TRUE, NA, 1))
@@ -1022,13 +1017,13 @@ data$sr_tech <-
       "fcsome00r" #does the adolescent use internet at home
     )
   ), na.rm = TRUE)
-hist(data$sr_tech, main = "Histogram of self_reported tech use", xlab = "self-reported tech use")
+#hist(data$sr_tech, main = "Histogram of self_reported tech use", xlab = "self-reported tech use")
 
 ########################
 ### Correlation ######
 ########################
 print(paste0("The correlation between general technology use on a weekday (time use diaries) and self-reported technology use is ", 
-             cor.test(data$sr_tech, data$tech_total_wd)$estimate))
+             round(cor.test(data$sr_tech, data$tech_total_wd)$estimate, 3)))
 
 #######################################################
 # Create well-being variables
@@ -1046,7 +1041,7 @@ data$fcgdsf00r <- 5 - data$fcgdsf00
 data$selfesteem <- rowMeans(subset(data, select = c("fcsati00r", "fcgdql00r", 
                                                           "fcdowl00r", "fcvalu00r", 
                                                           "fcgdsf00r")), na.rm = TRUE)
-hist(data$selfesteem, main = "Histogram of selfesteem", xlab = "Selfesteem")
+#hist(data$selfesteem, main = "Histogram of selfesteem", xlab = "Selfesteem")
 
 ########################
 ### Feelings Grid ######
@@ -1072,7 +1067,7 @@ data$wellbeing <- rowMeans(subset(data, select = c("fcmdsa00r", "fcmdsb00r",
                                                    "fcmdsi00r", "fcmdsj00r",
                                                    "fcmdsk00r", "fcmdsl00r",
                                                    "fcmdsm00r")), na.rm = TRUE)
-hist(data$wellbeing, main = "Histogram of wellbeing", xlab = "Wellbeing")
+#hist(data$wellbeing, main = "Histogram of wellbeing", xlab = "Wellbeing")
 
 ########################
 ### SDQ ######
@@ -1109,7 +1104,7 @@ data$sdqtot <- rowMeans(subset(data, select = c("fpsdhs00r", "fpsdmw00r",
                                                    "fpsdfs00r", "fpsddc00r",
                                                    "fpsdst00r", "fpsdte00r")), na.rm = TRUE)
 
-hist(data$sdqtot, main = "Histogram of SDQ total", xlab = "SDQ Total")
+#hist(data$sdqtot, main = "Histogram of SDQ total", xlab = "SDQ Total")
 
 ###############################
 # Recode Control measures
@@ -1155,4 +1150,4 @@ print(paste0("In MCS there are ", table(data$age)[[1]], " 13 year-olds and ",
 #######################################################
 # Save dataset
 #######################################################
-write.csv(data, file="1_3_MCS_dataset.csv")
+write.csv(data, file="../data/cleaned/1_3_MCS_dataset.csv")
