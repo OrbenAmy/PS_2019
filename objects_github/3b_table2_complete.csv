@@ -1,0 +1,34 @@
+"","tech_measure","sig_measure","observed_gui","lower_gui","upper_gui","p_gui","observed_psid","lower_psid","upper_psid","p_psid","observed_mcs","lower_mcs","upper_mcs","p_mcs","observed_agg"
+"1","sr_tech","median ES",-0.15,-0.17,-0.13,0,0.01,-0.03,0.05,0.4,-0.08,-0.1,-0.07,0,-0.08
+"2","sr_tech","share of results",4,NA,NA,0.13,2,NA,NA,1,5,NA,NA,0.24,11
+"3","sr_tech","share of sig results",4,NA,NA,0,0,NA,NA,1,4,NA,NA,0,8
+"4","tech_weekday_d","median ES",-0.01,-0.03,0.01,0.16,0.03,-0.05,0.1,0.32,0.02,0,0.04,0.01,0.01
+"5","tech_weekday_d","share of results",3,NA,NA,0.68,3,NA,NA,0.63,6,NA,NA,0.03,10
+"6","tech_weekday_d","share of sig results",0,NA,NA,1,0,NA,NA,1,2,NA,NA,0.02,2
+"7","tech_weekend_d","median ES",0.02,-0.02,0.05,0.31,-0.01,-0.07,0.05,0.47,0.01,-0.01,0.02,0.28,0.01
+"8","tech_weekend_d","share of results",4,NA,NA,0.11,2,NA,NA,1,4,NA,NA,0.73,10
+"9","tech_weekend_d","share of sig results",0,NA,NA,1,0,NA,NA,1,1,NA,NA,0.32,1
+"10","tech_weekday_c","median ES",-0.06,-0.08,-0.04,0,-0.01,-0.09,0.05,0.74,-0.04,-0.06,-0.02,0,-0.04
+"11","tech_weekday_c","share of results",4,NA,NA,0.13,4,NA,NA,0.14,6,NA,NA,0.04,14
+"12","tech_weekday_c","share of sig results",4,NA,NA,0,0,NA,NA,1,4,NA,NA,0,8
+"13","tech_weekend_c","median ES",-0.07,-0.1,-0.04,0,-0.04,-0.11,0.05,0.24,0,-0.02,0.01,0.66,-0.04
+"14","tech_weekend_c","share of results",4,NA,NA,0.13,3,NA,NA,0.63,4,NA,NA,0.67,11
+"15","tech_weekend_c","share of sig results",4,NA,NA,0,0,NA,NA,1,1,NA,NA,0.25,5
+"16","tech_30m_wd","median ES",-0.02,-0.03,0.04,0.01,-0.03,-0.2,-0.06,0.81,0.03,0.01,0.05,0,0
+"17","tech_30m_wd","share of results",4,NA,NA,0.13,2,NA,NA,1,5,NA,NA,0.23,7
+"18","tech_30m_wd","share of sig results",0,NA,NA,1,1,NA,NA,0.2,3,NA,NA,0,3
+"19","tech_30m_we","median ES",-0.03,-0.06,0,0.05,-0.11,-0.18,-0.03,0,0.02,0,0.03,0.01,-0.02
+"20","tech_30m_we","share of results",4,NA,NA,0.12,4,NA,NA,0.12,4,NA,NA,0.73,10
+"21","tech_30m_we","share of sig results",0,NA,NA,1,1,NA,NA,0.3,2,NA,NA,0.01,2
+"22","tech_1hr_wd","median ES",0,-0.04,0,0.65,-0.03,-0.12,0.04,0.77,0.02,0.01,0.04,0.02,0.01
+"23","tech_1hr_wd","share of results",2,NA,NA,1,2,NA,NA,1,5,NA,NA,0.21,9
+"24","tech_1hr_wd","share of sig results",0,NA,NA,1,0,NA,NA,1,1,NA,NA,0.27,1
+"25","tech_1hr_we","median ES",0,-0.01,0.05,0.91,-0.13,-0.15,0,0,0.03,0.02,0.05,0,0
+"26","tech_1hr_we","share of results",2,NA,NA,1,4,NA,NA,0.11,5,NA,NA,0.21,7
+"27","tech_1hr_we","share of sig results",0,NA,NA,1,2,NA,NA,0.01,4,NA,NA,0,4
+"28","tech_2hr_wd","median ES",-0.01,-0.02,0.01,0.39,-0.07,-0.14,0,0.08,0.02,0,0.03,0.01,0
+"29","tech_2hr_wd","share of results",2,NA,NA,1,4,NA,NA,0.13,6,NA,NA,0.03,8
+"30","tech_2hr_wd","share of sig results",0,NA,NA,1,0,NA,NA,1,1,NA,NA,0.27,1
+"31","tech_2hr_we","median ES",0.02,-0.02,0.02,0.27,-0.07,-0.11,0.05,0.04,0.04,0,0.03,0,0
+"32","tech_2hr_we","share of results",2,NA,NA,1,4,NA,NA,0.12,5,NA,NA,0.23,7
+"33","tech_2hr_we","share of sig results",0,NA,NA,1,0,NA,NA,1,4,NA,NA,0,4
